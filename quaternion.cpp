@@ -15,17 +15,29 @@ quaternion slerp(float u, const quaternion& q0, const quaternion& q1)
 {
     //TODO: implement me!
     //return q0;
-    q0.normalized();
-    q1.normalized();
-    
-    float m_dot = dot(q0, q1);
-    
-    if(m_dot < 0.00) {
-		q1.inv();
-		m_dot = -m_dot;
+    auto v0 = q0.normalized();
+	auto v1 = q1.normalized();
+
+	float dot_prod = dot(v0,v1);
+
+	if(dot_prod < 0.0f){
+		v1 = -v1;
+		dot_prod = -dot_prod;
 	}
-    
-    return pow((q1*q0.inv()), u) * q0; 
+
+	const double DOT_THRESHOLD = 0.9995;
+	if(dot_prod > DOT_THRESHOLD){
+			quaternion result = v0 + (v1 - v0)*u;
+			return result.normalized();
+	}
+
+	double t0 = acos(dot_prod);
+	double t1 = t0*u;
+
+	double s0 = cos(t1) - dot_prod * sin(t1) / sin(t0);
+	double s1 = sin(t1) / sin(t0);
+	
+	return (v0 * s0) + (v1 * s1);
 }
 
 void quaternion::from_angle_and_axis(float angle,const vec3& axis)
@@ -33,9 +45,9 @@ void quaternion::from_angle_and_axis(float angle,const vec3& axis)
     //TODO: compute the quaternion parameters (s,v) from the input rotation angle (in degrees) and axis
     // s = 
     // v =
-    angle = angle * (180/M_PI);
+    angle = angle * (M_PI/180);
     s = cos(angle/2);
-    v = sin(angle/2) * axis;
+    v = sin(angle/2) * axis.normalized();
 }
 
 void quaternion::to_angle_and_axis(float& angle,vec3& axis) const
@@ -43,7 +55,7 @@ void quaternion::to_angle_and_axis(float& angle,vec3& axis) const
     //TODO: compute the angle (in degrees) and the axis of the rotation, from the quaternion parameters (s,v)
     // angle = 
     // axis =
-    angle = (atan(v.magnitude()/s) * 2) * (angle*(M_PI/180));
+    angle = (atan2(v.magnitude(),s)* 180 * 2) / M_PI;
     axis = (v / v.magnitude()).normalized();
 }
 
